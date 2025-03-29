@@ -3,7 +3,9 @@ import { checkVulnerabilities, getComplexity, refactorCode } from './api';
 
 export function activate(context: vscode.ExtensionContext) {
 
-  let vulnerabilityDisposable = vscode.commands.registerCommand("hello-world.hello-world", async () => {
+  vscode.languages.registerCodeLensProvider('*', new CodeResQLensProvider());
+
+  const analyzeAndDecorate = async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showInformationMessage("No active text editor found.");
@@ -37,57 +39,106 @@ export function activate(context: vscode.ExtensionContext) {
 
     editor.setDecorations(decorationType, decorationsArray);
     vscode.window.showInformationMessage(`Detected ${vulnerabilities.vulnerabilities.length} vulnerabilities.`);
-  });
+  };
 
-  let complexityDisposable = vscode.commands.registerCommand("hello-world.checkComplexity", async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      vscode.window.showInformationMessage("No active text editor found.");
-      return;
-    }
+  context.subscriptions.push(vscode.commands.registerCommand("hello-world.hello-world", analyzeAndDecorate));
 
-    const text = editor.document.getText();
-    const complexity = await getComplexity(text);
+  analyzeAndDecorate(); // Trigger automatically when extension is activated
 
-    if (!complexity || !complexity.summary) {
-      vscode.window.showErrorMessage("Failed to get complexity analysis.");
-      return;
-    }
+  context.subscriptions.push(
 
-    vscode.window.showInformationMessage(`Complexity Analysis: LOC=${complexity.summary.lines_of_code}, Maintainability=${complexity.summary.maintainability}, Cyclomatic=${complexity.summary.cyclomatic_complexity}, Cognitive=${complexity.summary.cognitive_complexity}, NPath=${complexity.summary.npath_complexity}`);
-  });
+    vscode.commands.registerCommand("codeResQ.analyzeSelection", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
 
-  let refactorDisposable = vscode.commands.registerCommand("hello-world.refactorCode", async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      vscode.window.showInformationMessage("No active text editor found.");
-      return;
-    }
+      const selection = editor.selection;
+      if (selection.isEmpty) {
+        vscode.window.showInformationMessage("Please select code to analyze for vulnerabilities.");
+        return;
+      }
 
-    const selection = editor.selection;
-    if (selection.isEmpty) {
-      vscode.window.showInformationMessage("Please select the code you want to refactor.");
-      return;
-    }
+      const selectedText = editor.document.getText(selection);
+      const vulnerabilities = await checkVulnerabilities(selectedText);
 
-    const selectedText = editor.document.getText(selection);
-    const optimizedCode = await refactorCode(selectedText);
+      if (vulnerabilities && vulnerabilities.vulnerabilities.length > 0) {
+        vscode.window.showInformationMessage(`Vulnerabilities: ${vulnerabilities.vulnerabilities.map((v: any) => v.description).join(", ")}`);
+      } else {
+        vscode.window.showInformationMessage("No vulnerabilities found.");
+      }
+    }),
 
-    if (!optimizedCode) {
-      vscode.window.showErrorMessage("Refactoring failed.");
-      return;
-    }
+    vscode.commands.registerCommand("codeResQ.refactorSelection", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
 
-    editor.edit(editBuilder => {
-      editBuilder.replace(selection, optimizedCode);
-    });
+      const selection = editor.selection;
+      if (selection.isEmpty) {
+        vscode.window.showInformationMessage("Please select code to refactor.");
+        return;
+      }
 
-    vscode.window.showInformationMessage("Code refactored successfully.");
-  });
+      const selectedText = editor.document.getText(selection);
+      const optimizedCode = await refactorCode(selectedText);
 
-  context.subscriptions.push(vulnerabilityDisposable);
-  context.subscriptions.push(complexityDisposable);
-  context.subscriptions.push(refactorDisposable);
+      if (!optimizedCode) {
+        vscode.window.showErrorMessage("Refactoring failed.");
+        return;
+      }
+
+      const commentedOriginal = selectedText
+        .split('\n')
+        .map(line => `// ${line}`)
+        .join('\n');
+
+      editor.edit(editBuilder => {
+        editBuilder.replace(selection, `${optimizedCode}\n\n// Original code:\n${commentedOriginal}`);
+      });
+
+      vscode.window.showInformationMessage("Code refactored successfully.");
+    }),
+
+    vscode.commands.registerCommand("codeResQ.checkComplexitySelection", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+
+      const selection = editor.selection;
+      if (selection.isEmpty) {
+        vscode.window.showInformationMessage("Please select code to analyze for complexity.");
+        return;
+      }
+
+      const selectedText = editor.document.getText(selection);
+      const complexity = await getComplexity(selectedText);
+
+      if (!complexity || !complexity.summary) {
+        vscode.window.showErrorMessage("Complexity analysis failed.");
+        return;
+      }
+
+      vscode.window.showInformationMessage(`Complexity: LOC=${complexity.summary.lines_of_code}, Maintainability=${complexity.summary.maintainability}, Cyclomatic=${complexity.summary.cyclomatic_complexity}, Cognitive=${complexity.summary.cognitive_complexity}, NPath=${complexity.summary.npath_complexity}`);
+    })
+
+  );
+}
+
+class CodeResQLensProvider implements vscode.CodeLensProvider {
+  provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
+    const topOfDocument = new vscode.Range(0, 0, 0, 0);
+    return [
+      new vscode.CodeLens(topOfDocument, {
+        title: "Analyze Selection",
+        command: "codeResQ.analyzeSelection"
+      }),
+      new vscode.CodeLens(topOfDocument, {
+        title: "Check Complexity",
+        command: "codeResQ.checkComplexitySelection"
+      }),
+      new vscode.CodeLens(topOfDocument, {
+        title: "Refactor Selection",
+        command: "codeResQ.refactorSelection"
+      })
+    ];
+  }
 }
 
 export function deactivate() {}

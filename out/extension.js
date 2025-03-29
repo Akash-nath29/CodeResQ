@@ -27,7 +27,8 @@ exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const api_1 = require("./api");
 function activate(context) {
-    let vulnerabilityDisposable = vscode.commands.registerCommand("hello-world.hello-world", async () => {
+    vscode.languages.registerCodeLensProvider('*', new CodeResQLensProvider());
+    const analyzeAndDecorate = async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showInformationMessage("No active text editor found.");
@@ -55,30 +56,33 @@ function activate(context) {
         });
         editor.setDecorations(decorationType, decorationsArray);
         vscode.window.showInformationMessage(`Detected ${vulnerabilities.vulnerabilities.length} vulnerabilities.`);
-    });
-    let complexityDisposable = vscode.commands.registerCommand("hello-world.checkComplexity", async () => {
+    };
+    context.subscriptions.push(vscode.commands.registerCommand("hello-world.hello-world", analyzeAndDecorate));
+    analyzeAndDecorate(); // Trigger automatically when extension is activated
+    context.subscriptions.push(vscode.commands.registerCommand("codeResQ.analyzeSelection", async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showInformationMessage("No active text editor found.");
+        if (!editor)
             return;
-        }
-        const text = editor.document.getText();
-        const complexity = await (0, api_1.getComplexity)(text);
-        if (!complexity || !complexity.summary) {
-            vscode.window.showErrorMessage("Failed to get complexity analysis.");
-            return;
-        }
-        vscode.window.showInformationMessage(`Complexity Analysis: LOC=${complexity.summary.lines_of_code}, Maintainability=${complexity.summary.maintainability}, Cyclomatic=${complexity.summary.cyclomatic_complexity}, Cognitive=${complexity.summary.cognitive_complexity}, NPath=${complexity.summary.npath_complexity}`);
-    });
-    let refactorDisposable = vscode.commands.registerCommand("hello-world.refactorCode", async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showInformationMessage("No active text editor found.");
-            return;
-        }
         const selection = editor.selection;
         if (selection.isEmpty) {
-            vscode.window.showInformationMessage("Please select the code you want to refactor.");
+            vscode.window.showInformationMessage("Please select code to analyze for vulnerabilities.");
+            return;
+        }
+        const selectedText = editor.document.getText(selection);
+        const vulnerabilities = await (0, api_1.checkVulnerabilities)(selectedText);
+        if (vulnerabilities && vulnerabilities.vulnerabilities.length > 0) {
+            vscode.window.showInformationMessage(`Vulnerabilities: ${vulnerabilities.vulnerabilities.map((v) => v.description).join(", ")}`);
+        }
+        else {
+            vscode.window.showInformationMessage("No vulnerabilities found.");
+        }
+    }), vscode.commands.registerCommand("codeResQ.refactorSelection", async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        const selection = editor.selection;
+        if (selection.isEmpty) {
+            vscode.window.showInformationMessage("Please select code to refactor.");
             return;
         }
         const selectedText = editor.document.getText(selection);
@@ -87,16 +91,52 @@ function activate(context) {
             vscode.window.showErrorMessage("Refactoring failed.");
             return;
         }
+        const commentedOriginal = selectedText
+            .split('\n')
+            .map(line => `// ${line}`)
+            .join('\n');
         editor.edit(editBuilder => {
-            editBuilder.replace(selection, optimizedCode);
+            editBuilder.replace(selection, `${optimizedCode}\n\n// Original code:\n${commentedOriginal}`);
         });
         vscode.window.showInformationMessage("Code refactored successfully.");
-    });
-    context.subscriptions.push(vulnerabilityDisposable);
-    context.subscriptions.push(complexityDisposable);
-    context.subscriptions.push(refactorDisposable);
+    }), vscode.commands.registerCommand("codeResQ.checkComplexitySelection", async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        const selection = editor.selection;
+        if (selection.isEmpty) {
+            vscode.window.showInformationMessage("Please select code to analyze for complexity.");
+            return;
+        }
+        const selectedText = editor.document.getText(selection);
+        const complexity = await (0, api_1.getComplexity)(selectedText);
+        if (!complexity || !complexity.summary) {
+            vscode.window.showErrorMessage("Complexity analysis failed.");
+            return;
+        }
+        vscode.window.showInformationMessage(`Complexity: LOC=${complexity.summary.lines_of_code}, Maintainability=${complexity.summary.maintainability}, Cyclomatic=${complexity.summary.cyclomatic_complexity}, Cognitive=${complexity.summary.cognitive_complexity}, NPath=${complexity.summary.npath_complexity}`);
+    }));
 }
 exports.activate = activate;
+class CodeResQLensProvider {
+    provideCodeLenses(document) {
+        const topOfDocument = new vscode.Range(0, 0, 0, 0);
+        return [
+            new vscode.CodeLens(topOfDocument, {
+                title: "Analyze Selection",
+                command: "codeResQ.analyzeSelection"
+            }),
+            new vscode.CodeLens(topOfDocument, {
+                title: "Check Complexity",
+                command: "codeResQ.checkComplexitySelection"
+            }),
+            new vscode.CodeLens(topOfDocument, {
+                title: "Refactor Selection",
+                command: "codeResQ.refactorSelection"
+            })
+        ];
+    }
+}
 function deactivate() { }
 exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map
