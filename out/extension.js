@@ -27,8 +27,7 @@ exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const api_1 = require("./api");
 function activate(context) {
-    //   console.log('Congratulations, your extension "hello-world" is now active!');
-    let disposable = vscode.commands.registerCommand("hello-world.hello-world", async () => {
+    let vulnerabilityDisposable = vscode.commands.registerCommand("hello-world.hello-world", async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showInformationMessage("No active text editor found.");
@@ -42,7 +41,6 @@ function activate(context) {
             vscode.window.showErrorMessage("Failed to analyze code or no vulnerabilities found.");
             return;
         }
-        // Create decorations for the vulnerabilities
         const decorationType = vscode.window.createTextEditorDecorationType({
             textDecoration: "underline wavy red"
         });
@@ -58,7 +56,45 @@ function activate(context) {
         editor.setDecorations(decorationType, decorationsArray);
         vscode.window.showInformationMessage(`Detected ${vulnerabilities.vulnerabilities.length} vulnerabilities.`);
     });
-    context.subscriptions.push(disposable);
+    let complexityDisposable = vscode.commands.registerCommand("hello-world.checkComplexity", async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showInformationMessage("No active text editor found.");
+            return;
+        }
+        const text = editor.document.getText();
+        const complexity = await (0, api_1.getComplexity)(text);
+        if (!complexity || !complexity.summary) {
+            vscode.window.showErrorMessage("Failed to get complexity analysis.");
+            return;
+        }
+        vscode.window.showInformationMessage(`Complexity Analysis: LOC=${complexity.summary.lines_of_code}, Maintainability=${complexity.summary.maintainability}, Cyclomatic=${complexity.summary.cyclomatic_complexity}, Cognitive=${complexity.summary.cognitive_complexity}, NPath=${complexity.summary.npath_complexity}`);
+    });
+    let refactorDisposable = vscode.commands.registerCommand("hello-world.refactorCode", async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showInformationMessage("No active text editor found.");
+            return;
+        }
+        const selection = editor.selection;
+        if (selection.isEmpty) {
+            vscode.window.showInformationMessage("Please select the code you want to refactor.");
+            return;
+        }
+        const selectedText = editor.document.getText(selection);
+        const optimizedCode = await (0, api_1.refactorCode)(selectedText);
+        if (!optimizedCode) {
+            vscode.window.showErrorMessage("Refactoring failed.");
+            return;
+        }
+        editor.edit(editBuilder => {
+            editBuilder.replace(selection, optimizedCode);
+        });
+        vscode.window.showInformationMessage("Code refactored successfully.");
+    });
+    context.subscriptions.push(vulnerabilityDisposable);
+    context.subscriptions.push(complexityDisposable);
+    context.subscriptions.push(refactorDisposable);
 }
 exports.activate = activate;
 function deactivate() { }
