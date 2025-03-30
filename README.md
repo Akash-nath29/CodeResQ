@@ -64,10 +64,5 @@ When you open a Python, TypeScript, or JavaScript file:
 
 ---
 
-## 🆘 Support and Feedback
-
-Need help or have suggestions?
-
-- Contact us at: **support@coderesq.com**
 
 Happy Coding with CodeResQ!
