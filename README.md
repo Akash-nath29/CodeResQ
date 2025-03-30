@@ -1,71 +1,73 @@
-# test README
+# CodeResQ: Simplified User Guide
 
-This is the README for your extension "test". After writing up a brief description, we recommend including the following sections.
+Welcome to **CodeResQ**, your friendly code-assistant that helps you detect vulnerabilities, analyze code complexity, and refactor your Python, TypeScript, and JavaScript code efficiently—right inside Visual Studio Code!
 
-## Features
+## 🧑‍💻 What does CodeResQ do?
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+CodeResQ makes coding safer and easier by:
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- **Finding Vulnerabilities:** Automatically highlights potential security issues directly within your code.
+- **Analyzing Complexity:** Easily checks how complex your code is, making it simpler to maintain.
+- **Code Refactoring:** Automatically improves your code, making it cleaner and faster without changing its functionality.
 
 ---
 
-## Following extension guidelines
+## 🚀 Getting Started with CodeResQ
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+### Step 1: Installation
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- Open **Visual Studio Code**.
+- Go to the **Extensions** panel on the left sidebar (`Ctrl+Shift+X`).
+- Search for **"CodeResQ"** in the search bar.
+- Click on **"Install"**.
 
-## Working with Markdown
+### Step 2: Activate CodeResQ
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+Once installed, CodeResQ automatically activates whenever you open a Python, TypeScript, or JavaScript file.
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+### Step 3: Using CodeResQ
 
-## For more information
+When you open a Python, TypeScript, or JavaScript file:
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+- CodeResQ will **automatically scan** your code and highlight vulnerabilities with red wavy underlines.
+- Hover your mouse over underlined lines to see detailed descriptions of the issues.
 
-**Enjoy!**
+---
+
+## 🎯 CodeResQ Features Explained
+
+### 🔍 Analyze Selection
+
+1. Highlight any section of your Python, TypeScript, or JavaScript code.
+2. Click on the **"Analyze Selection"** button at the top.
+3. Instantly see if there are security vulnerabilities in your selected code.
+
+### 📈 Check Complexity
+
+1. Select any function or section of your Python, TypeScript, or JavaScript code.
+2. Click on the **"Check Complexity"** button.
+3. Get an immediate summary of how easy or difficult your code is to maintain.
+
+### 🛠️ Refactor Your Code
+
+1. Select the Python, TypeScript, or JavaScript function or code you want to improve.
+2. Click on the **"Refactor Selection"** button.
+3. CodeResQ automatically improves your code, clearly showing you the optimized code on top and preserving the original code safely commented below.
+
+---
+
+## 💡 Tips for Best Use
+
+- Regularly use **"Analyze Selection"** to keep your code secure.
+- Frequently check complexity to maintain high-quality, readable code.
+- Confidently use the refactoring tool—CodeResQ ensures the original code is preserved and commented for easy review.
+
+---
+
+## 🆘 Support and Feedback
+
+Need help or have suggestions?
+
+- Contact us at: **support@coderesq.com**
+
+Happy Coding with CodeResQ!
