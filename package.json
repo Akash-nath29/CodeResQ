@@ -1,9 +1,9 @@
 {
-	"name": "hello-world",
-	"displayName": "Hello World",
-	"description": "A simple VS Code extension to display file content",
+	"name": "coderesq",
+	"displayName": "CodeResQ",
+	"description": "Protecting your code from vulnerabilities and bugs.",
 	"version": "0.0.1",
-	"publisher": "your-name",
+	"publisher": "Nalayak",
 	"engines": {
 		"vscode": "^1.70.0"
 	},
@@ -11,14 +11,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:hello-world.hello-world"
+		"onCommand:crq.crq"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "hello-world.hello-world",
-				"title": "Say Hello"
+				"command": "crq.crq",
+				"title": "CodeResQ"
 			}
 		]
 	},

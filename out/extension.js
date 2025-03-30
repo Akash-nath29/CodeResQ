@@ -57,7 +57,7 @@ function activate(context) {
         editor.setDecorations(decorationType, decorationsArray);
         vscode.window.showInformationMessage(`Detected ${vulnerabilities.vulnerabilities.length} vulnerabilities.`);
     };
-    context.subscriptions.push(vscode.commands.registerCommand("hello-world.hello-world", analyzeAndDecorate));
+    context.subscriptions.push(vscode.commands.registerCommand("crq.crq", analyzeAndDecorate));
     analyzeAndDecorate(); // Trigger automatically when extension is activated
     context.subscriptions.push(vscode.commands.registerCommand("codeResQ.analyzeSelection", async () => {
         const editor = vscode.window.activeTextEditor;
@@ -86,17 +86,26 @@ function activate(context) {
             return;
         }
         const selectedText = editor.document.getText(selection);
-        const optimizedCode = await (0, api_1.refactorCode)(selectedText);
+        let optimizedCode = await (0, api_1.refactorCode)(selectedText);
         if (!optimizedCode) {
             vscode.window.showErrorMessage("Refactoring failed.");
             return;
         }
-        const commentedOriginal = selectedText
-            .split('\n')
-            .map(line => `// ${line}`)
-            .join('\n');
+        const importRegex = /^(import .+|from .+ import .+)$/gm;
+        const imports = optimizedCode.match(importRegex) || [];
+        optimizedCode = optimizedCode.replace(importRegex, '').trim();
         editor.edit(editBuilder => {
-            editBuilder.replace(selection, `${optimizedCode}\n\n// Original code:\n${commentedOriginal}`);
+            const fullText = editor.document.getText();
+            const existingImports = new Set(fullText.match(importRegex) || []);
+            const newImports = imports.filter(i => !existingImports.has(i));
+            if (newImports.length > 0) {
+                editBuilder.insert(new vscode.Position(0, 0), `${newImports.join('\n')}\n`);
+            }
+            const commentedOriginal = selectedText
+                .split('\n')
+                .map(line => `# ${line}`)
+                .join('\n');
+            editBuilder.replace(selection, `${optimizedCode}\n\n\n${commentedOriginal}`);
         });
         vscode.window.showInformationMessage("Code refactored successfully.");
     }), vscode.commands.registerCommand("codeResQ.checkComplexitySelection", async () => {
@@ -120,21 +129,20 @@ function activate(context) {
 exports.activate = activate;
 class CodeResQLensProvider {
     provideCodeLenses(document) {
+        const lenses = [];
         const topOfDocument = new vscode.Range(0, 0, 0, 0);
-        return [
-            new vscode.CodeLens(topOfDocument, {
-                title: "Analyze Selection",
-                command: "codeResQ.analyzeSelection"
-            }),
-            new vscode.CodeLens(topOfDocument, {
-                title: "Check Complexity",
-                command: "codeResQ.checkComplexitySelection"
-            }),
-            new vscode.CodeLens(topOfDocument, {
-                title: "Refactor Selection",
-                command: "codeResQ.refactorSelection"
-            })
-        ];
+        lenses.push(new vscode.CodeLens(topOfDocument, { title: "Analyze Selection", command: "codeResQ.analyzeSelection" }));
+        lenses.push(new vscode.CodeLens(topOfDocument, { title: "Check Complexity", command: "codeResQ.checkComplexitySelection" }));
+        lenses.push(new vscode.CodeLens(topOfDocument, { title: "Refactor Selection", command: "codeResQ.refactorSelection" }));
+        const regex = /^\s*def\s+/;
+        for (let i = 0; i < document.lineCount; i++) {
+            const line = document.lineAt(i);
+            if (regex.test(line.text)) {
+                lenses.push(new vscode.CodeLens(line.range, { title: "Refactor Function", command: "codeResQ.refactorSelection" }));
+                lenses.push(new vscode.CodeLens(line.range, { title: "Check Function Complexity", command: "codeResQ.checkComplexitySelection" }));
+            }
+        }
+        return lenses;
     }
 }
 function deactivate() { }
