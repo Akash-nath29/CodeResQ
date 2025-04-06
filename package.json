@@ -2,7 +2,7 @@
 	"name": "coderesq",
 	"displayName": "CodeResQ",
 	"description": "Protecting your code from vulnerabilities and bugs.",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "Nalayak",
 	"engines": {
 		"vscode": "^1.70.0"

@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    ports:
+      - mode: ingress
+        target: 8000
+        published: 8000
+    command: uvicorn app:app --host 0.0.0.0 --port 8000

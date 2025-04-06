@@ -1,2 +1,6 @@
 fastapi
+uvicorn[standard]
+pydantic
 ollama
+azure-core
+azure-ai-inference

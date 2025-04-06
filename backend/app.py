@@ -1,12 +1,40 @@
+
 from fastapi import FastAPI
 from pydantic import BaseModel
-import ollama
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import SystemMessage, UserMessage
+import os
 import json
+import re
 
 app = FastAPI()
 
+# Azure Inference API config
+endpoint = "https://models.inference.ai.azure.com"
+model_name = "Meta-Llama-3.1-405B-Instruct"
+token = os.getenv("TOKEN")
+
+client = ChatCompletionsClient(
+    endpoint=endpoint,
+    credential=AzureKeyCredential(token),
+)
+
 class CodeRequest(BaseModel):
     code: str
+
+async def call_model(prompt: str) -> str:
+    response = client.complete(
+        messages=[
+            SystemMessage("You are a helpful assistant."),
+            UserMessage(prompt),
+        ],
+        temperature=1.0,
+        top_p=1.0,
+        max_tokens=1000,
+        model=model_name,
+    )
+    return response.choices[0].message.content.strip()
 
 @app.post("/analyze")
 async def analyze_code(request: CodeRequest):
@@ -32,7 +60,7 @@ Provide output strictly in the following JSON format, reporting only real, actio
 }}
 
 Important guidelines:
-- Do NOT include minor code-quality issues, typos, or non-critical problems.
+- Do include minor code-quality issues, typos, or non-critical problems.
 - Prioritize accuracy and relevance. If unsure about a vulnerability, omit it.
 - Focus only on clear, severe security vulnerabilities.
 - If no severe security vulnerabilities exist, respond exactly with: {{"vulnerabilities": []}}
@@ -41,20 +69,26 @@ Here is the code for analysis:
 
 {request.code}
 """
-
-    response = ollama.generate(
-        model='llama3.1:8b',
-        prompt=prompt,
-        format='json'
-    )
-
     try:
-        vulnerabilities = json.loads(response['response'])
-    except json.JSONDecodeError:
+        response = await call_model(prompt)
+        print("RAW ANALYZE RESPONSE:", response)
+
+        # Strip timestamps (e.g. [2025-04-07T00:31:51.111+05:30]) and extract the JSON
+        cleaned = re.sub(r"\[\d{4}-\d{2}-\d{2}T.*?\] ?", "", response)
+
+        # Extract the JSON object
+        match = re.search(r"\{[\s\S]*\}", cleaned)
+        if match:
+            json_data = match.group(0)
+            vulnerabilities = json.loads(json_data)
+        else:
+            vulnerabilities = {"vulnerabilities": []}
+
+    except json.JSONDecodeError as e:
+        print("JSON Decode Error in analyze:", e)
         vulnerabilities = {"vulnerabilities": []}
 
     return vulnerabilities
-
 
 @app.post("/complexity")
 async def calculate_complexity(request: CodeRequest):
@@ -75,7 +109,7 @@ Maintainability (Code Smells):
 
 Cyclomatic Complexity, Cognitive Complexity, NPath Complexity rules:
 - If/Else Condition: +1 Cyclomatic, +1 Cognitive, doubles NPath
-- For/While/Do-While Loop: +1 Cyclomatic, +1 Cognitive, multiplies NPath
+- For/While/Do-While Loop: +1 Cyclatic, +1 Cognitive, multiplies NPath
 - Switch Case: +1 Cyclomatic per case, +1 Cognitive, adds NPath
 - Ternary Operator: +1 Cyclomatic, +1 Cognitive, doubles NPath
 - Recursion: +1 Cyclomatic, +1 Cognitive, high NPath
@@ -95,20 +129,23 @@ Provide output strictly in the following JSON format:
 Here is the code snippet:
 {request.code}
 """
-
-    response = ollama.generate(
-        model='llama3.1:8b',
-        prompt=prompt,
-        format='json'
-    )
-
     try:
-        complexity_summary = json.loads(response['response'])
-    except json.JSONDecodeError:
+        response = await call_model(prompt)
+        print("RAW RESPONSE:", response)
+
+        # Extract JSON from triple-backtick or anywhere in the text
+        match = re.search(r"\{[\s\S]*\}", response)
+        if match:
+            cleaned = match.group(0)
+            complexity_summary = json.loads(cleaned)
+        else:
+            complexity_summary = {"summary": {}}
+
+    except json.JSONDecodeError as e:
+        print("JSON Decode Error:", str(e))
         complexity_summary = {"summary": {}}
 
     return complexity_summary
-
 
 @app.post("/refactor")
 async def refactor_code(request: CodeRequest):
@@ -129,15 +166,13 @@ Refactor this code:
 
 {request.code}
 """
+    optimized_code = await call_model(prompt)
+    
+    # print(optimized_code)
 
-    response = ollama.generate(model='llama3.1:8b', prompt=prompt)
-    optimized_code = response['response'].strip()
-
-    # Clean the response to ensure it contains no redundant markdown or extra code blocks
     if optimized_code.startswith("```python"):
         optimized_code = optimized_code[len("```python"):].strip()
     if optimized_code.endswith("```"):
         optimized_code = optimized_code[:-3].strip()
 
     return {"optimized_code": optimized_code}
-
