@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export async function checkVulnerabilities(code: string): Promise<any> {
   try {
-    const response = await axios.post('https://akash-nath29-web--8000.prod1.defang.dev/analyze', { code });
+    const response = await axios.post('http://127.0.0.1:8000/analyze', { code });
     return response.data;
   } catch (error) {
     return "error";
@@ -11,7 +11,7 @@ export async function checkVulnerabilities(code: string): Promise<any> {
 
 export async function getComplexity(code: string): Promise<any> {
   try {
-    const response = await axios.post('https://akash-nath29-web--8000.prod1.defang.dev/complexity', { code });
+    const response = await axios.post('http://127.0.0.1:8000/complexity', { code });
     return response.data;
   } catch (error) {
     return "error";
@@ -20,7 +20,7 @@ export async function getComplexity(code: string): Promise<any> {
 
 export async function refactorCode(code: string): Promise<string | null> {
   try {
-    const response = await axios.post('https://akash-nath29-web--8000.prod1.defang.dev/refactor', { code });
+    const response = await axios.post('http://127.0.0.1:8000/refactor', { code });
     return response.data.optimized_code;
   } catch (error) {
     return null;

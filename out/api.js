@@ -7,7 +7,7 @@ exports.refactorCode = exports.getComplexity = exports.checkVulnerabilities = vo
 const axios_1 = __importDefault(require("axios"));
 async function checkVulnerabilities(code) {
     try {
-        const response = await axios_1.default.post('https://akash-nath29-web--8000.prod1.defang.dev/analyze', { code });
+        const response = await axios_1.default.post('http://127.0.0.1:8000/analyze', { code });
         return response.data;
     }
     catch (error) {
@@ -17,7 +17,7 @@ async function checkVulnerabilities(code) {
 exports.checkVulnerabilities = checkVulnerabilities;
 async function getComplexity(code) {
     try {
-        const response = await axios_1.default.post('https://akash-nath29-web--8000.prod1.defang.dev/complexity', { code });
+        const response = await axios_1.default.post('http://127.0.0.1:8000/complexity', { code });
         return response.data;
     }
     catch (error) {
@@ -27,7 +27,7 @@ async function getComplexity(code) {
 exports.getComplexity = getComplexity;
 async function refactorCode(code) {
     try {
-        const response = await axios_1.default.post('https://akash-nath29-web--8000.prod1.defang.dev/refactor', { code });
+        const response = await axios_1.default.post('http://127.0.0.1:8000/refactor', { code });
         return response.data.optimized_code;
     }
     catch (error) {

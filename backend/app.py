@@ -1,20 +1,31 @@
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 import os
 import json
 import re
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Azure Inference API config
 endpoint = "https://models.inference.ai.azure.com"
 model_name = "Meta-Llama-3.1-405B-Instruct"
 token = os.getenv("TOKEN")
-
+print(token)
 client = ChatCompletionsClient(
     endpoint=endpoint,
     credential=AzureKeyCredential(token),
